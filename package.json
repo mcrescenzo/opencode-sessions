@@ -1,0 +1,48 @@
+{
+  "name": "@mcrescenzo/opencode-sessions",
+  "version": "0.1.0",
+  "description": "Read-only opencode plugin tools for listing, inspecting, reading, and searching local session history.",
+  "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "main": "./opencode-sessions.js",
+  "exports": {
+    ".": "./opencode-sessions.js"
+  },
+  "files": [
+    "opencode-sessions.js",
+    "opencode-sessions-core.js",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md"
+  ],
+  "license": "MIT",
+  "author": "Michael Crescenzo",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mcrescenzo/opencode-sessions"
+  },
+  "homepage": "https://github.com/mcrescenzo/opencode-sessions#readme",
+  "bugs": {
+    "url": "https://github.com/mcrescenzo/opencode-sessions/issues"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "sessions"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check opencode-sessions.js && node --check opencode-sessions-core.js",
+    "pack:dry-run": "npm pack --dry-run --json",
+    "prepublishOnly": "npm test && npm run check && npm run pack:dry-run"
+  },
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.17.7"
+  }
+}

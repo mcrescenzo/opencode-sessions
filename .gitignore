@@ -1,0 +1,19 @@
+# Beads / Dolt files (added by bd init)
+.beads/
+.dolt/
+*.db
+.beads-credential-key
+
+# Local OpenCode runtime artifacts
+.opencode/
+session-*.md
+
+# Local runtime artifacts
+node_modules/
+*.log
+.repo-review/
+
+# Bun lockfile: npm/package-lock.json is this package's canonical package
+# manager and release gate, but per-plugin `bun install` (the repo-wide dev
+# workflow) may create this as a side effect. Keep it untracked.
+bun.lock
