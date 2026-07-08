@@ -1,8 +1,13 @@
 # opencode-sessions
 
-Read-only opencode plugin tools for listing, inspecting, reading, and searching local session history through opencode's SDK session API.
+Give your opencode agent memory of past sessions. Recall what you tried last
+time, check what a subagent's session actually did, or search weeks of
+transcripts for that one snippet — all without leaving the conversation.
+`opencode-sessions` adds four read-only tools that let an agent list, inspect,
+read, and search local opencode session history through opencode's SDK
+session API. Nothing it exposes can modify, delete, or resume a session.
 
-## Installation
+## Quick Start
 
 Requirements:
 
@@ -50,14 +55,57 @@ This plugin does not auto-allow its tools. Grant only the tools you want agents 
 
 After installing, registering, or changing this plugin, restart opencode. Running sessions keep already-loaded plugin code.
 
-## Hooks
+## Example
 
-This plugin registers exactly two hooks:
+Say you can't remember which past session settled on an auth approach. Ask
+the agent directly — it can search transcripts and read the one that matches:
 
-| Hook | Behavior |
-| --- | --- |
-| `config` | No-op. Present so the plugin factory conforms to the plugin `Hooks` contract; makes no config changes. |
-| `tool` | Registers the four read-only session tools listed below (`session_list`, `session_info`, `session_read`, `session_search`). |
+> "What did we decide about auth? I think it came up in a session last week."
+
+The agent first calls `session_search` to find candidate sessions, then
+`session_read` to pull the full exchange from the one that matches. The
+output below is illustrative — the session IDs and message content are made
+up for this example — but the format matches what the tools actually return.
+
+`session_search({ query: "auth" })`
+
+```
+Session search for text "auth" in /home/user/project: 3 matches across 12 session(s) scanned, 640 message(s) scanned
+1. ses_a1b2c3d4 — Refactor auth middleware
+   message=msg_9f8e7d6c role=assistant time=2026-06-30T18:22:04.000Z
+   …we decided to use short-lived JWTs with a 15-minute expiry and rotate refresh tokens server-side, no session cookies…
+2. ses_a1b2c3d4 — Refactor auth middleware
+   message=msg_9f8e7d71 role=user time=2026-06-30T18:23:11.000Z
+   …agreed, let's lock that in and update the API gateway config…
+3. ses_7f00e211 — Fix login redirect loop
+   message=msg_11aa22bb role=assistant time=2026-06-24T09:04:57.000Z
+   …the redirect loop was unrelated to auth, it was a stale cookie path…
+```
+
+`session_read({ sessionId: "ses_a1b2c3d4", limit: 20 })`
+
+```
+Transcript for Refactor auth middleware (ses_a1b2c3d4) in /home/user/project: 20 messages (limit=20)
+
+--- user msg_9f8e7d6b @ 2026-06-30T18:21:50.000Z
+What auth approach should we use for the new service?
+
+--- assistant msg_9f8e7d6c @ 2026-06-30T18:22:04.000Z
+Let's use short-lived JWTs (15-minute expiry) with server-side refresh token rotation. No session cookies — Authorization header only.
+
+--- user msg_9f8e7d71 @ 2026-06-30T18:23:11.000Z
+Agreed, let's lock that in and update the API gateway config.
+```
+
+The agent now answers from the actual transcript instead of guessing.
+
+### For AI agents
+
+Tools are read-only, scoped to the current project directory, and
+output-bounded by default (`session_read` caps at 100 messages / 30,000
+characters unless raised). When you don't know which session to read, call
+`session_search` first to find a `sessionId` — it's cheaper than scanning
+sessions one at a time with `session_read`.
 
 ## Tools
 
@@ -122,14 +170,6 @@ Searches recent local session transcripts and returns bounded, redacted snippets
 
 Literal queries are capped at 1000 characters. Regex patterns are capped at 300 characters. Invalid regex syntax returns a bounded error, and known unsafe nested-quantifier or optional-atom-chain shapes are rejected to reduce catastrophic-backtracking risk. Regex matching still uses the JavaScript regular-expression engine, so prefer literal search for untrusted patterns.
 
-## Privacy Model
-
-Session transcripts can contain secrets, proprietary code, prompts, tool output, file paths, and local metadata. This plugin applies best-effort redaction for common secret shapes, URL credentials, sensitive query parameters, and sensitive object keys, strips terminal control sequences, then caps output sizes. Redaction is not a security boundary and cannot guarantee removal of every sensitive value.
-
-Defaults avoid tool I/O and metadata in transcript output. Users must opt into `includeToolCalls` or `includeMetadata` per call.
-
-User-facing SDK error messages and echoed search queries are redacted before display. Returned sessions are locally directory-validated when opencode provides a project directory. Degraded transcript output is reserved for decode/read-format failures; SDK/API failures surface distinctly.
-
 ## Read-Only Guarantee
 
 The plugin intentionally exposes only:
@@ -141,43 +181,22 @@ The plugin intentionally exposes only:
 
 It does not expose mutating opencode session APIs such as `delete`, `update`, `prompt`, `promptAsync`, `command`, `shell`, `fork`, `share`, `abort`, `summarize`, `revert`, or `unrevert`. Tests include tripwires to ensure tool execution does not call those APIs.
 
-## Verification
+## Privacy Model
 
-```sh
-npm ci
-npm test
-npm run check
-npm run pack:dry-run
-```
+Session transcripts can contain secrets, proprietary code, prompts, tool output, file paths, and local metadata. This plugin applies best-effort redaction for common secret shapes, URL credentials, sensitive query parameters, and sensitive object keys, strips terminal control sequences, then caps output sizes. Redaction is not a security boundary and cannot guarantee removal of every sensitive value.
 
-`npm run pack:dry-run` must include only:
+Defaults avoid tool I/O and metadata in transcript output. Users must opt into `includeToolCalls` or `includeMetadata` per call.
 
-- `CHANGELOG.md`
-- `CODE_OF_CONDUCT.md`
-- `CONTRIBUTING.md`
-- `LICENSE`
-- `README.md`
-- `SECURITY.md`
-- `opencode-sessions-core.js`
-- `opencode-sessions.js`
-- `package.json`
+User-facing SDK error messages and echoed search queries are redacted before display. Returned sessions are locally directory-validated when opencode provides a project directory. Degraded transcript output is reserved for decode/read-format failures; SDK/API failures surface distinctly.
 
-## Release Process
+## Development And Release
 
-npm is the canonical package manager for this repository. `package-lock.json` is authoritative; Bun lockfiles are not used.
+This plugin registers two hooks internally (`config`, `tool`); see
+[docs/architecture.md](docs/architecture.md) for details.
 
-Before publishing:
-
-1. Update `CHANGELOG.md`.
-2. Bump `package.json` using SemVer.
-3. Run `npm ci`, `npm test`, `npm run check`, and `npm run pack:dry-run`.
-4. Commit the release changes.
-5. Tag as `vX.Y.Z`, for example `v0.1.0`.
-6. Publish to npm with provenance enabled.
-
-The public versioned contract includes tool names, tool arguments, defaults, caps, permission behavior, privacy/output modes, Node engine, package entrypoint, and the guarantee that mutating opencode session APIs are not exposed.
-
-Breaking changes include removing or renaming a tool or argument, narrowing a documented bound, changing a default, broadening default output exposure, changing permission defaults, lowering privacy protections, raising the Node engine floor, or changing the package entrypoint.
+For the development setup, verification commands, release process, and the
+versioned-contract / breaking-change policy, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Support And Security
 

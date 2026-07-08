@@ -1,6 +1,6 @@
 {
   "name": "@mcrescenzo/opencode-sessions",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Read-only opencode plugin tools for listing, inspecting, reading, and searching local session history.",
   "type": "module",
   "publishConfig": {

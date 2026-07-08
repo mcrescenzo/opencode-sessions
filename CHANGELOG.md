@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 This project follows the spirit of [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and uses semantic versioning for published package releases. Git tags use `vX.Y.Z`.
 
+## [0.1.1] - 2026-07-08
+
+### Changed
+
+- Documentation-only release: README now leads with the session-memory use
+  case and adds a worked `session_search` → `session_read` example plus a
+  short "For AI agents" note.
+- Relocated the hooks table to `docs/architecture.md` and verification,
+  release-process, and versioned-contract detail to `CONTRIBUTING.md`. No
+  runtime changes.
+
 ## [0.1.0] - 2026-07-07
 
 ### Added
